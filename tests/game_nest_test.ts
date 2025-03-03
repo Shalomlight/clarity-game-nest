@@ -1,7 +1,5 @@
-// [Previous test content remains, adding new tests...]
-
 Clarinet.test({
-  name: "Can manage community treasury",
+  name: "Can manage community treasury with proper token transfer",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const deployer = accounts.get('deployer')!;
     const wallet1 = accounts.get('wallet_1')!;
@@ -14,7 +12,7 @@ Clarinet.test({
       ], deployer.address)
     ]);
     
-    // Deposit to treasury
+    // Deposit to treasury with STX transfer
     let depositBlock = chain.mineBlock([
       Tx.contractCall('game-nest', 'deposit-to-treasury', [
         types.uint(0),
@@ -24,7 +22,7 @@ Clarinet.test({
     
     depositBlock.receipts[0].result.expectOk().expectBool(true);
     
-    // Verify treasury balance
+    // Verify treasury balance and STX transfer
     let getInfo = chain.callReadOnlyFn(
       'game-nest',
       'get-community-info',
@@ -34,5 +32,16 @@ Clarinet.test({
     
     let communityInfo = getInfo.result.expectOk().expectSome();
     assertEquals(communityInfo['treasury-balance'], 1000);
+    
+    // Verify member points update
+    let memberInfo = chain.callReadOnlyFn(
+      'game-nest',
+      'get-member-info',
+      [types.uint(0), types.principal(deployer.address)],
+      deployer.address
+    );
+    
+    let memberData = memberInfo.result.expectOk().expectSome();
+    assertEquals(memberData['points'], 10);
   },
 });
